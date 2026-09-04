@@ -43,6 +43,37 @@ function login(credentials) {
   return { token: token };
 }
 
+/**
+ * Mengaktifkan password pertama untuk akun HRGA. Ini hanya dapat dilakukan
+ * sekali, selama akun aktif dan belum memiliki password.
+ */
+function setupInitialAdminPassword(input) {
+  var employee = findEmployeeByIdentifier_(input && input.identifier);
+  var password = clean_(input && input.password);
+  if (!isInitialAdminCandidate_(employee)) {
+    throw new Error('Akun admin tidak dapat diaktifkan. Periksa email/ID karyawan atau hubungi administrator sistem.');
+  }
+  if (employee.data['Password Hash'] || employee.data['Password Salt']) {
+    throw new Error('Password akun admin ini sudah diatur. Silakan masuk atau gunakan lupa password.');
+  }
+  if (password.length < 8) throw new Error('Password minimal 8 karakter.');
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    // Baca ulang setelah mendapatkan lock agar password awal tidak dapat ditetapkan dua kali.
+    employee = findEmployeeByIdentifier_(input.identifier);
+    if (!isInitialAdminCandidate_(employee)) throw new Error('Akun admin tidak dapat diaktifkan. Periksa email/ID karyawan atau hubungi administrator sistem.');
+    if (employee.data['Password Hash'] || employee.data['Password Salt']) throw new Error('Password akun admin ini sudah diatur. Silakan masuk atau gunakan lupa password.');
+    var credentials = passwordRecord_(password);
+    var employeeSheet = sheet_(CONFIG.SHEETS.EMPLOYEES);
+    employeeSheet.getRange(employee.row, 8, 1, 2).setValues([[credentials.hash, credentials.salt]]);
+    audit_('ATUR_PASSWORD_AWAL_ADMIN', 'Employees', employee.data.Email, 'Password awal admin diatur sendiri');
+    clearCache_();
+    return { message: 'Password admin berhasil diatur. Silakan masuk menggunakan password baru Anda.' };
+  } finally { lock.releaseLock(); }
+}
+
 function requestPasswordReset(input) {
   var employee = findEmployeeByIdentifier_(input && input.identifier);
   // Jangan mengungkap apakah akun tertentu terdaftar.
@@ -151,6 +182,7 @@ function requireUser_(token) {
 }
 function requireHrga_(token) { var user = requireUser_(token); if (!isHrga_(user)) throw new Error('Akses hanya tersedia untuk HRGA.'); return user; }
 function isHrga_(user) { return String(user.role).toUpperCase() === 'HRGA' || String(user.department).toUpperCase() === 'HRGA'; }
+function isInitialAdminCandidate_(employee) { return Boolean(employee && String(employee.data.Aktif).toLowerCase() !== 'false' && isHrga_({ role: employee.data.Role, department: employee.data.Departemen })); }
 function publicEmployee_(u) { return { email: u.email, name: u.name, department: u.department, role: u.role, balance: u.balance, isHrga: isHrga_(u) }; }
 
 function changeBalance_(email, change, reference, actor) {

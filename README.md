@@ -10,12 +10,13 @@ Portal web-app untuk Google Sites: karyawan masuk dengan **email atau nomor ID k
    - `LeaveRequests`: `ID, Email, Jenis Cuti, Tanggal Mulai, Tanggal Selesai, Durasi, Alasan, Status, Approver, Timestamp`
    - `LeaveBalanceHistory`: `Timestamp, Email, Perubahan, Saldo Sebelum, Saldo Sesudah, Referensi, Aktor`
    - `AuditLog`: `Timestamp, Aktor, Aksi, Entitas, ID Entitas, Detail`
-3. Untuk spreadsheet dari versi sebelumnya, `setupMasterSheets` menyisipkan kolom **ID Karyawan** dan menambahkan kolom hash/salt password tanpa mengubah data karyawan yang ada. HRGA perlu melengkapi ID dan menetapkan password sedikitnya 8 karakter melalui menu administrasi sebelum akun dapat login.
+3. Untuk spreadsheet dari versi sebelumnya, `setupMasterSheets` menyisipkan kolom **ID Karyawan** dan menambahkan kolom hash/salt password tanpa mengubah data karyawan yang ada. Untuk admin HRGA pertama yang belum memiliki password, gunakan tautan **Admin HRGA belum punya password?** pada halaman login untuk mengatur password sendiri. Tautan ini hanya berlaku sekali untuk akun HRGA aktif yang belum memiliki password. Setelah masuk, HRGA dapat mengelola password akun lain melalui menu administrasi.
 4. Tambahkan setidaknya satu akun HRGA dengan **Role** atau **Departemen** bernilai `HRGA`, serta email yang valid. Akun tersebut menerima permohonan reset password melalui `MailApp` dan dapat mengganti password karyawan pada menu **Administrasi HRGA**.
 
 ## Login dan reset password
 
 * Karyawan memasukkan email **atau** ID karyawan serta password. Password tidak disimpan dalam teks biasa: yang tersimpan di sheet adalah hash SHA-256 dengan salt unik.
+* Akun HRGA aktif tanpa password dapat menetapkan password awalnya sendiri dari halaman login. Akun yang sudah memiliki password harus masuk seperti biasa atau menggunakan alur reset password.
 * Sesi login memakai token acak di Script Cache selama enam jam. Operasi pengajuan, approval, dan administrasi selalu memvalidasi token dan peran di server.
 * Tombol **Lupa password?** mengirim email permohonan reset kepada semua akun HRGA aktif. Untuk privasi, layar selalu menunjukkan respons yang sama, baik akun ditemukan maupun tidak.
 
