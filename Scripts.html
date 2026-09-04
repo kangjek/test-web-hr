@@ -1,14 +1,18 @@
 <script>
-let state={}; const $=id=>document.getElementById(id);
+let state={}, sessionToken=''; const $=id=>document.getElementById(id);
 function error(e){$('notice').textContent=(e&&e.message)||'Terjadi kendala. Silakan coba lagi atau hubungi HRGA.'; $('notice').className='';}
 function success(m){$('notice').textContent=m; $('notice').className='success';}
 function call(name,arg){return new Promise((ok,bad)=>{let r=google.script.run.withSuccessHandler(ok).withFailureHandler(bad);arg===undefined?r[name]():r[name](arg);});}
+function authenticatedCall(name,data){return call(name,Object.assign({},data||{},{token:sessionToken}));}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function table(rows,admin){if(!rows.length)return '<p>Belum ada pengajuan.</p>';let h=['Jenis Cuti','Tanggal Mulai','Tanggal Selesai','Durasi','Status','Approver'];return '<table><thead><tr>'+h.map(x=>`<th>${x}</th>`).join('')+(admin?'<th>Aksi</th>':'')+'</tr></thead><tbody>'+rows.map(r=>`<tr>${h.map(x=>`<td>${esc(r[x])}</td>`).join('')}${admin?`<td class="actions">${r.Status==='Menunggu'?`<button onclick="decide('${r.ID}','Disetujui')">Setujui</button><button onclick="decide('${r.ID}','Ditolak')">Tolak</button>`:'—'}</td>`:''}</tr>`).join('')+'</tbody></table>';}
-function render(data){state=data; $('loading').hidden=true;$('app').hidden=false;$('name').textContent=data.user.name;$('meta').textContent=`${data.user.department} · ${data.user.role}`;$('balance').textContent=data.user.balance;$('myRequests').innerHTML=table(data.requests);$('adminTab').hidden=!data.user.isHrga;if(data.user.isHrga)$('allRequests').innerHTML=table(data.allRequests,true);}
-async function load(){try{render(await call('getBootstrapData'));}catch(e){error(e);$('loading').textContent='Data tidak dapat dimuat.';}}
-async function decide(id,decision){try{success((await call('decideLeaveRequest',{requestId:id,decision})).message);load();}catch(e){error(e);}}
+function render(data){state=data; $('loading').hidden=true;$('app').hidden=false;$('refresh').hidden=false;$('name').textContent=data.user.name;$('meta').textContent=`${data.user.department} · ${data.user.role}`;$('balance').textContent=data.user.balance;$('myRequests').innerHTML=table(data.requests);$('adminTab').hidden=!data.user.isHrga;if(data.user.isHrga)$('allRequests').innerHTML=table(data.allRequests,true);}
+async function load(){try{render(await authenticatedCall('getBootstrapData'));}catch(e){error(e);$('loading').textContent='Sesi tidak dapat dimuat. Silakan masuk kembali.';$('loginCard').hidden=false;$('app').hidden=true;$('refresh').hidden=true;}}
+async function decide(id,decision){try{success((await authenticatedCall('decideLeaveRequest',{requestId:id,decision})).message);load();}catch(e){error(e);}}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.hidden=true);document.querySelectorAll('[data-tab]').forEach(x=>x.classList.remove('active'));$(b.dataset.tab).hidden=false;b.classList.add('active');});
-$('refresh').onclick=load;$('leaveForm').onsubmit=async e=>{e.preventDefault();try{let v=Object.fromEntries(new FormData(e.target));success((await call('submitLeaveRequest',v)).message);e.target.reset();load();}catch(x){error(x);}};
-$('employeeForm').onsubmit=async e=>{e.preventDefault();try{let v=Object.fromEntries(new FormData(e.target));v.active=e.target.active.checked;success((await call('saveEmployee',v)).message);e.target.reset();load();}catch(x){error(x);}};load();
+$('refresh').onclick=load;$('loginForm').onsubmit=async e=>{e.preventDefault();try{let result=await call('login',Object.fromEntries(new FormData(e.target)));sessionToken=result.token;$('loginCard').hidden=true;$('loading').hidden=false;success('Login berhasil.');load();}catch(x){error(x);}};
+$('forgotButton').onclick=()=>{$('loginCard').hidden=true;$('forgotCard').hidden=false;};$('backToLogin').onclick=()=>{$('forgotCard').hidden=true;$('loginCard').hidden=false;};
+$('forgotForm').onsubmit=async e=>{e.preventDefault();try{success((await call('requestPasswordReset',Object.fromEntries(new FormData(e.target)))).message);e.target.reset();$('forgotCard').hidden=true;$('loginCard').hidden=false;}catch(x){error(x);}};
+$('leaveForm').onsubmit=async e=>{e.preventDefault();try{let v=Object.fromEntries(new FormData(e.target));success((await authenticatedCall('submitLeaveRequest',v)).message);e.target.reset();load();}catch(x){error(x);}};
+$('employeeForm').onsubmit=async e=>{e.preventDefault();try{let v=Object.fromEntries(new FormData(e.target));v.active=e.target.active.checked;success((await authenticatedCall('saveEmployee',v)).message);e.target.reset();load();}catch(x){error(x);}};
 </script>
