@@ -89,7 +89,10 @@ function requestPasswordReset(input) {
 function getBootstrapData(input) {
   var user = requireUser_(input && input.token);
   var result = { user: publicEmployee_(user), requests: getOwnRequests_(user.email), syncedAt: getCache_().syncedAt };
-  if (isHrga_(user)) result.allRequests = getRequests_();
+  if (isHrga_(user)) {
+    result.allRequests = getRequests_();
+    result.employees = getEmployeeList_();
+  }
   return result;
 }
 function submitLeaveRequest(form) {
@@ -197,6 +200,20 @@ function changeBalance_(email, change, reference, actor) {
 function getOwnRequests_(email) { return getRequests_().filter(function (r) { return r.Email === email; }); }
 function getRequests_() { return rowsAsObjects_(sheet_(CONFIG.SHEETS.REQUESTS), CONFIG.REQUEST_HEADERS).map(serialize_); }
 function getEmployees_() { return rowsAsObjects_(sheet_(CONFIG.SHEETS.EMPLOYEES), CONFIG.EMPLOYEE_HEADERS); }
+/** Daftar karyawan untuk tampilan admin HRGA, tanpa data password. */
+function getEmployeeList_() {
+  return getEmployees_().map(function (e) {
+    return {
+      'ID Karyawan': e['ID Karyawan'],
+      'Email': e.Email,
+      'Nama': e.Nama,
+      'Departemen': e.Departemen,
+      'Role': e.Role,
+      'Saldo Cuti': e['Saldo Cuti'],
+      'Aktif': String(e.Aktif).toLowerCase() !== 'false'
+    };
+  });
+}
 function findEmployeeRow_(email) { return findRow_(CONFIG.SHEETS.EMPLOYEES, CONFIG.EMPLOYEE_HEADERS, 'Email', email); }
 function findEmployeeByIdentifier_(value) { var identifier = clean_(value); if (!identifier) return null; var byEmail = findEmployeeRow_(normalizeEmail_(identifier)); return byEmail || findRow_(CONFIG.SHEETS.EMPLOYEES, CONFIG.EMPLOYEE_HEADERS, 'ID Karyawan', identifier); }
 function findRequestRow_(id) { return findRow_(CONFIG.SHEETS.REQUESTS, CONFIG.REQUEST_HEADERS, 'ID', id); }

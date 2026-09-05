@@ -1,6 +1,6 @@
 # Portal Cuti HR — Google Apps Script
 
-Portal web-app untuk Google Sites: karyawan masuk dengan **email atau nomor ID karyawan dan password**, lalu hanya dapat mengakses profil, saldo, dan pengajuan miliknya. HRGA mendapat administrasi akun serta approval. Autentikasi tidak lagi bergantung pada `Session.getActiveUser()`, sehingga web app tetap dapat dibuka saat identitas akun Google tidak tersedia.
+Portal web-app untuk Google Sites: karyawan masuk dengan **email atau nomor ID karyawan dan password**, lalu hanya dapat mengakses profil, saldo, dan pengajuan miliknya. HRGA mendapat administrasi akun serta approval, termasuk menu **Daftar Karyawan** untuk melihat data akun dan sisa cuti seluruh karyawan. Autentikasi tidak lagi bergantung pada `Session.getActiveUser()`, sehingga web app tetap dapat dibuka saat identitas akun Google tidak tersedia.
 
 ## Konfigurasi master spreadsheet
 
@@ -19,6 +19,12 @@ Portal web-app untuk Google Sites: karyawan masuk dengan **email atau nomor ID k
 * Akun HRGA aktif tanpa password dapat menetapkan password awalnya sendiri dari halaman login. Akun yang sudah memiliki password harus masuk seperti biasa atau menggunakan alur reset password.
 * Sesi login memakai token acak di Script Cache selama enam jam. Operasi pengajuan, approval, dan administrasi selalu memvalidasi token dan peran di server.
 * Tombol **Lupa password?** mengirim email permohonan reset kepada semua akun HRGA aktif. Untuk privasi, layar selalu menunjukkan respons yang sama, baik akun ditemukan maupun tidak.
+
+## Menu Daftar Karyawan (HRGA)
+
+* Akun HRGA melihat tab tambahan **Daftar Karyawan** berisi ID karyawan, email, nama, departemen, role, sisa cuti, dan status aktif untuk seluruh karyawan.
+* Data diambil lewat `getEmployeeList_()` di server, yang sengaja tidak menyertakan hash maupun salt password sehingga tidak ada kredensial yang terkirim ke client.
+* Menu ini hanya untuk membaca data; perubahan data karyawan tetap dilakukan lewat formulir **Tambah / perbarui karyawan** di menu Administrasi HRGA.
 
 ## Deployment dan Google Sites
 
